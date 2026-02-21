@@ -28,14 +28,14 @@
     body { font-family: Arial; margin: 12px; }
 	#board{
 		display: grid;
-		grid-template-columns: repeat(auto-fill, 320px); /* фикс ширина карточки */
+		grid-template-columns: repeat(auto-fill, 300px); /* фикс ширина карточки */
 		gap: 14px;                                      /* зазор между карточками */
 		justify-content: start;                          /* не растягивать колонки */
 		margin-bottom: 18px;
 	}
 
 	.card {
-		width: 320px;                 /* фикс ширина карточки (важно) */
+		width: 300px;                 /* фикс ширина карточки (важно) */
 		box-sizing: border-box;       /* чтобы padding не ломал ширину */
 		border: 1px solid #d8d8d8;
 		border-radius: 16px;
@@ -45,34 +45,36 @@
 		overflow: hidden;             /* чтобы ничего не “вылезало” в соседей */
 	}
 
-	.topRow{
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 10px;
-		margin-bottom: 10px;
-		padding: 0 6px; /* небольшой внутренний отступ, чтобы не липло к краям */
-	}
-		
-	.tab{
-		width: 100%;
-		height: 44px;
-		padding: 0 12px;
+.topRow{
+  display:flex;
+  gap:8px;
+  margin-bottom:10px;
+  padding: 0 4px;        /* отступ от краёв карточки */
+}
+
+.topRow .tab{
+  flex: 1 1 0;
+  min-width: 0;
+		height: 40px;
+		padding: 0 10px;
 		border: 0;
 		border-radius: 12px;
 		background: #d9dbe3;
-		font-size: 18px;
+		font-size: 14px;
 		cursor: pointer;
+		white-space: nowrap;
 
-		display:flex;
-		align-items:center;
-		justify-content:center;
-	}
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+}
 	
     .tab.active { background: #78c850; color: #fff; }
 
     .titleLine{
 		font-weight: 700;
-		font-size: 22px;
+		font-size: 18px;
 
 		white-space: nowrap;
 		overflow: hidden;
@@ -87,25 +89,25 @@
 		margin: 10px 0 8px;
 	}
 	
-    .kv { font-size: 18px; line-height: 1.4; }
-    .kv input { width: 210px; }
+    .kv { font-size: 16px; line-height: 1.35; }
+    .kv input { width: 190px; }
 
 	.bottomRow{
 		display: grid;
 		grid-template-columns: 1fr 1fr;
-		gap: 10px;
+		gap: 8px;
 		margin-top: 12px;
-		padding: 0 6px;
+		padding: 0 4px;
 	}
 	
 	.btn{
 		width: 100%;
-		height: 44px;
-		padding: 0 12px;
+		height: 40px;
+		padding: 0 10px;
 		border: 0;
 		border-radius: 12px;
 		background: #d9dbe3;
-		font-size: 18px;
+		font-size: 14px;
 		cursor: pointer;
 
 		display:flex;
@@ -142,12 +144,13 @@
 	/* === UI buttons unified === */
 	.card button:not(.btnInfo){
 		width: 100%;
-		height: 44px;
-		padding: 0 12px;          /* ключевое: убрали раздутие из-за .btn padding */
-		font-size: 18px;
-		border-radius: 14px;
+		height: 40px;
+		padding: 0 10px;          /* ключевое: убрали раздутие из-за .btn padding */
+		font-size: 14px;
+		border-radius: 12px;
 		border: 0;
 		cursor: pointer;
+		white-space: nowrap;
 
 		display: flex;            /* текст по центру */
 		align-items: center;
@@ -183,9 +186,9 @@
 	
 .card .btnInfo{
 	flex: 0 0 auto;
-	width: 36px;
-	height: 36px;
-	border-radius: 12px;
+	width: 32px;
+	height: 32px;
+	border-radius: 10px;
 
 	background: #2f7bff;
 	color: #fff;
@@ -198,7 +201,7 @@
 	justify-content: center;
 
 	font-weight: 700;
-	font-size: 16px;
+	font-size: 14px;
 	line-height: 1;
 }
 .titleRow{
