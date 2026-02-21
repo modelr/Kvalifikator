@@ -6,6 +6,37 @@ const { createClient } = require('@supabase/supabase-js')
 const SUPABASE_URL = 'https://vtwgjriksttsjnlcpimz.supabase.co'
 const SUPABASE_ANON_KEY = 'sb_publishable_ZxC1Ua1Kbv5pJP5zIv3pmg_kggA7dAX'
 
+const DEFAULT_BASE_DIR = 'D:\\Клиенты 2025\\Квалификатор'
+
+function settingsFilePath() {
+  return path.join(app.getPath('userData'), 'app-settings.json')
+}
+
+function readSettings() {
+  try {
+    const p = settingsFilePath()
+    if (!fs.existsSync(p)) return {}
+    return JSON.parse(fs.readFileSync(p, 'utf-8') || '{}')
+  } catch {
+    return {}
+  }
+}
+
+function writeSettings(nextSettings) {
+  const p = settingsFilePath()
+  fs.writeFileSync(p, JSON.stringify(nextSettings, null, 2), 'utf-8')
+}
+
+function getBaseDir() {
+  const settings = readSettings()
+  return settings.baseDir || DEFAULT_BASE_DIR
+}
+
+function setBaseDir(baseDir) {
+  const settings = readSettings()
+  writeSettings({ ...settings, baseDir })
+}
+
 // ---------- storage: сохраняем сессию в файл ----------
 function storageFilePath() {
   return path.join(app.getPath('userData'), 'supabase-auth.json')
@@ -95,6 +126,29 @@ ipcMain.handle('auth:session', async () => {
   return { ok: true, session: data.session }
 })
 
+
+ipcMain.handle('settings:getBaseDir', async () => {
+  const baseDir = getBaseDir()
+  return { ok: true, baseDir }
+})
+
+ipcMain.handle('settings:pickBaseDir', async () => {
+  const currentPath = getBaseDir()
+  const res = await dialog.showOpenDialog({
+    defaultPath: currentPath,
+    properties: ['openDirectory', 'createDirectory', 'promptToCreate'],
+    title: 'Выберите папку Квалификатор',
+  })
+
+  if (res.canceled || !res.filePaths?.length) {
+    return { ok: false, error: 'Выбор папки отменён' }
+  }
+
+  const [baseDir] = res.filePaths
+  setBaseDir(baseDir)
+  return { ok: true, baseDir }
+})
+
 ipcMain.handle('fs:pickFiles', async () => {
   const res = await dialog.showOpenDialog({
     properties: ['openFile', 'multiSelections'],
@@ -140,7 +194,7 @@ ipcMain.handle('leads:create', async (_evt, { title, text, files }) => {
   const folderName = titleClean ? `${q}_${titleClean}` : q
 
   // 3) папка сделки
-  const baseDir = 'D:\\Клиенты 2025\\Квалификатор'
+  const baseDir = getBaseDir()
   const folder = path.join(baseDir, folderName)
   fs.mkdirSync(folder, { recursive: true })
 
