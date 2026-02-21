@@ -37,6 +37,53 @@ function setBaseDir(baseDir) {
   writeSettings({ ...settings, baseDir })
 }
 
+function resolveLeadFolderPath({ folderPath, notesPath }) {
+  const baseDir = getBaseDir()
+
+  if (folderPath && fs.existsSync(folderPath)) {
+    return folderPath
+  }
+
+  const candidateFromFolder = folderPath ? path.basename(path.normalize(folderPath)) : ''
+  const candidateFromNotes = notesPath ? path.basename(path.dirname(path.normalize(notesPath))) : ''
+  const folderName = candidateFromFolder || candidateFromNotes
+
+  if (!folderName || folderName === '.' || folderName === path.sep) {
+    return folderPath || null
+  }
+
+  return path.join(baseDir, folderName)
+}
+
+function resolveLeadNotesPath({ notesPath, folderPath }) {
+  if (notesPath && fs.existsSync(notesPath)) {
+    return notesPath
+  }
+
+  const fileName = notesPath ? path.basename(path.normalize(notesPath)) : 'notes.txt'
+  if (!folderPath) return notesPath || null
+  return path.join(folderPath, fileName)
+}
+
+function resolveLeadPaths(row) {
+  const folder_path = resolveLeadFolderPath({
+    folderPath: row?.folder_path,
+    notesPath: row?.notes_path,
+  })
+
+  const notes_path = resolveLeadNotesPath({
+    notesPath: row?.notes_path,
+    folderPath: folder_path,
+  })
+
+  return {
+    ...row,
+    folder_path,
+    notes_path,
+  }
+}
+
+
 // ---------- storage: сохраняем сессию в файл ----------
 function storageFilePath() {
   return path.join(app.getPath('userData'), 'supabase-auth.json')
@@ -247,7 +294,7 @@ ipcMain.handle('board:list', async () => {
     .order('id', { ascending: false })
 
   if (error) return { ok: false, error: error.message }
-  return { ok: true, rows: data || [] }
+  return { ok: true, rows: (data || []).map(resolveLeadPaths) }
 })
 
 ipcMain.handle('board:setStage', async (_evt, { id, status }) => {
@@ -321,7 +368,9 @@ ipcMain.handle('board:reject', async (_evt, { id, reason }) => {
 
   if (eGet) return { ok: false, error: eGet.message }
 
-  const folder = row?.folder_path
+  const folder = resolveLeadFolderPath({
+    folderPath: row?.folder_path,
+  })
   if (folder) {
     const p = path.join(folder, 'Причина отказа.txt')
     fs.writeFileSync(p, String(reason || ''), 'utf-8')
@@ -360,7 +409,9 @@ ipcMain.handle('board:toWork', async (_evt, { id, crmNumber }) => {
 
   if (eGet) return { ok: false, error: eGet.message }
 
-  const folder = row?.folder_path
+  const folder = resolveLeadFolderPath({
+    folderPath: row?.folder_path,
+  })
   if (folder) {
     const p = path.join(folder, 'Номер заказа в СРМ.txt')
     fs.writeFileSync(p, String(crmNumber || ''), 'utf-8')
@@ -398,7 +449,7 @@ ipcMain.handle('leads:list', async () => {
     .order('id', { ascending: false })
 
   if (error) return { ok: false, error: error.message }
-  return { ok: true, rows: data || [] }
+  return { ok: true, rows: (data || []).map(resolveLeadPaths) }
 })
 
 ipcMain.handle('leads:setStatus', async (_evt, { id, status }) => {
@@ -429,8 +480,9 @@ ipcMain.handle('leads:setStatus', async (_evt, { id, status }) => {
 ipcMain.handle('leads:readNotes', async (_evt, { notesPath }) => {
   try {
     if (!notesPath) return { ok: false, error: 'notesPath is empty' }
-    const text = await fs.promises.readFile(notesPath, 'utf8')
-    return { ok: true, text }
+    const resolvedNotesPath = resolveLeadNotesPath({ notesPath, folderPath: null })
+    const text = await fs.promises.readFile(resolvedNotesPath, 'utf8')
+    return { ok: true, text, notesPath: resolvedNotesPath }
   } catch (e) {
     return { ok: false, error: e?.message || String(e) }
   }
@@ -439,8 +491,9 @@ ipcMain.handle('leads:readNotes', async (_evt, { notesPath }) => {
 ipcMain.handle('leads:saveNotes', async (_evt, { notesPath, text }) => {
   try {
     if (!notesPath) return { ok: false, error: 'notesPath is empty' }
-    await fs.promises.writeFile(notesPath, String(text ?? ''), 'utf8')
-    return { ok: true }
+    const resolvedNotesPath = resolveLeadNotesPath({ notesPath, folderPath: null })
+    await fs.promises.writeFile(resolvedNotesPath, String(text ?? ''), 'utf8')
+    return { ok: true, notesPath: resolvedNotesPath }
   } catch (e) {
     return { ok: false, error: e?.message || String(e) }
   }
@@ -450,7 +503,8 @@ ipcMain.handle('leads:saveNotes', async (_evt, { notesPath, text }) => {
 ipcMain.handle('leads:openFolder', async (_evt, { folderPath }) => {
   try {
     if (!folderPath) return { ok: false, error: 'folderPath is empty' }
-    const result = await shell.openPath(folderPath)
+    const resolvedFolderPath = resolveLeadFolderPath({ folderPath })
+    const result = await shell.openPath(resolvedFolderPath)
     if (result) return { ok: false, error: result }
     return { ok: true }
   } catch (e) {
