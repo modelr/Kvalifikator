@@ -94,8 +94,10 @@
 		margin: 10px 0 8px;
 	}
 	
-    .kv { font-size: 16px; line-height: 1.35; }
-    .kv input { width: 190px; }
+    .kv { font-size: 16px; line-height: 1.35; display: grid; gap: 4px; }
+    .kvRow { display: grid; grid-template-columns: 36px 1fr 32px; gap: 6px; align-items: center; }
+    .kvLabel { text-align: right; }
+    .kv input { width: 100%; box-sizing: border-box; }
 
 	.bottomRow{
 		display: grid;

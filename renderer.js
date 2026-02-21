@@ -303,8 +303,6 @@ btnFolder.dataset.folder = row.folder_path || ''
 btnFolder.title = 'Открыть папку заказа'
 
 titleRow.appendChild(title)
-titleRow.appendChild(btnInfo)
-titleRow.appendChild(btnFolder)
 card.appendChild(titleRow)
 
   const kv = document.createElement('div')
@@ -325,11 +323,30 @@ card.appendChild(titleRow)
   phone.onchange = saveContact
   email.onchange = saveContact
 
-  kv.appendChild(document.createTextNode('тел: '))
-  kv.appendChild(phone)
-  kv.appendChild(document.createElement('br'))
-  kv.appendChild(document.createTextNode('email: '))
-  kv.appendChild(email)
+  const phoneRow = document.createElement('div')
+  phoneRow.className = 'kvRow'
+
+  const phoneLabel = document.createElement('span')
+  phoneLabel.className = 'kvLabel'
+  phoneLabel.textContent = 'тел:'
+
+  phoneRow.appendChild(phoneLabel)
+  phoneRow.appendChild(phone)
+  phoneRow.appendChild(btnInfo)
+
+  const emailRow = document.createElement('div')
+  emailRow.className = 'kvRow'
+
+  const emailLabel = document.createElement('span')
+  emailLabel.className = 'kvLabel'
+  emailLabel.textContent = 'email:'
+
+  emailRow.appendChild(emailLabel)
+  emailRow.appendChild(email)
+  emailRow.appendChild(btnFolder)
+
+  kv.appendChild(phoneRow)
+  kv.appendChild(emailRow)
   card.appendChild(kv)
 
   const bottom = document.createElement('div')
