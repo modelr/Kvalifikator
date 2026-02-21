@@ -4,6 +4,8 @@ contextBridge.exposeInMainWorld('api', {
   login: (email, password) => ipcRenderer.invoke('auth:login', { email, password }),
   logout: () => ipcRenderer.invoke('auth:logout'),
   getSession: () => ipcRenderer.invoke('auth:session'),
+  getBaseDir: () => ipcRenderer.invoke('settings:getBaseDir'),
+  pickBaseDir: () => ipcRenderer.invoke('settings:pickBaseDir'),
   
   pickFiles: () => ipcRenderer.invoke('fs:pickFiles'),
   createLead: (title, text, files) => ipcRenderer.invoke('leads:create', { title, text, files }),

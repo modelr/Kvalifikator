@@ -3,6 +3,24 @@ const email = document.getElementById('email')
 const password = document.getElementById('password')
 let pickedFiles = []
 
+async function refreshBaseDir() {
+  const baseDirPath = document.getElementById('baseDirPath')
+  if (!baseDirPath) return
+  const res = await window.api.getBaseDir()
+  baseDirPath.textContent = res.ok ? res.baseDir : 'не удалось получить путь'
+}
+
+document.getElementById('btnPickBaseDir')?.addEventListener('click', async () => {
+  const res = await window.api.pickBaseDir()
+  if (!res.ok) {
+    out.textContent = res.error
+    return
+  }
+  await refreshBaseDir()
+  out.textContent = 'Папка сохранена: ' + res.baseDir
+})
+
+
 function askText(title, placeholder) {
   return new Promise((resolve) => {
     const overlay = document.createElement('div')
@@ -107,6 +125,11 @@ document.getElementById('btnPickFiles').addEventListener('click', async () => {
 document.getElementById('btnCreateLead').addEventListener('click', async () => {
   out.textContent = 'Creating lead...'
     try {
+  const baseDirRes = await window.api.getBaseDir()
+  if (!baseDirRes.ok || !baseDirRes.baseDir) {
+    out.textContent = 'Сначала выберите папку Квалификатор'
+    return
+  }
   const text = document.getElementById('leadText').value || ''
   const title = document.getElementById('leadTitle').value
   const res = await window.api.createLead(title, text, pickedFiles)
@@ -407,4 +430,5 @@ async function refreshBoard() {
 
 // после запуска и после создания сделки — обновляем доску
 setTimeout(refreshBoard, 300)
+setTimeout(refreshBaseDir, 100)
 document.getElementById('btnCreateLead').addEventListener('click', () => setTimeout(refreshBoard, 800))
