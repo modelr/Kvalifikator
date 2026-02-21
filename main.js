@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron')
+const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron')
 const path = require('path')
 const fs = require('fs')
 const { createClient } = require('@supabase/supabase-js')
@@ -140,7 +140,7 @@ ipcMain.handle('leads:create', async (_evt, { title, text, files }) => {
   const folderName = titleClean ? `${q}_${titleClean}` : q
 
   // 3) папка сделки
-  const baseDir = 'D:\\Клиенты 2026'
+  const baseDir = 'D:\\Клиенты 2025\\Квалификатор'
   const folder = path.join(baseDir, folderName)
   fs.mkdirSync(folder, { recursive: true })
 
@@ -393,6 +393,15 @@ ipcMain.handle('leads:saveNotes', async (_evt, { notesPath, text }) => {
 })
 
 
-
+ipcMain.handle('leads:openFolder', async (_evt, { folderPath }) => {
+  try {
+    if (!folderPath) return { ok: false, error: 'folderPath is empty' }
+    const result = await shell.openPath(folderPath)
+    if (result) return { ok: false, error: result }
+    return { ok: true }
+  } catch (e) {
+    return { ok: false, error: e?.message || String(e) }
+  }
+})
 
 app.whenReady().then(createWindow)

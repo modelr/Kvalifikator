@@ -272,8 +272,16 @@ btnInfo.className = 'btnInfo'
 btnInfo.textContent = 'i'
 btnInfo.dataset.notes = row.notes_path || ''
 
+const btnFolder = document.createElement('button')
+btnFolder.type = 'button'
+btnFolder.className = 'btnInfo'
+btnFolder.textContent = '📁'
+btnFolder.dataset.folder = row.folder_path || ''
+btnFolder.title = 'Открыть папку заказа'
+
 titleRow.appendChild(title)
 titleRow.appendChild(btnInfo)
+titleRow.appendChild(btnFolder)
 card.appendChild(titleRow)
 
   const kv = document.createElement('div')
@@ -368,12 +376,21 @@ card.appendChild(titleRow)
 // делегирование кликов по кнопкам "i"
 document.addEventListener('click', async (e) => {
   const btn = e.target.closest('.btnInfo')
-  if (!btn) return
+  if (!btn || btn.dataset.folder) return
   const notesPath = btn.dataset.notes
   if (!notesPath) { alert('notes_path пустой'); return }
   const res = await window.api.readNotes(notesPath)
   if (!res.ok) { alert('Read error: ' + res.error); return }
   openNotesModal(notesPath, res.text)
+})
+
+document.addEventListener('click', async (e) => {
+  const btn = e.target.closest('.btnInfo[data-folder]')
+  if (!btn) return
+  const folderPath = btn.dataset.folder
+  if (!folderPath) { alert('folder_path пустой'); return }
+  const res = await window.api.openFolder(folderPath)
+  if (!res.ok) { alert('Open folder error: ' + res.error) }
 })
 
 async function refreshBoard() {

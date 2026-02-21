@@ -17,4 +17,5 @@ contextBridge.exposeInMainWorld('api', {
   boardToWork: (id, crmNumber) => ipcRenderer.invoke('board:toWork', { id, crmNumber }),
   readNotes: (notesPath) => ipcRenderer.invoke('leads:readNotes', { notesPath }),
   saveNotes: (notesPath, text) => ipcRenderer.invoke('leads:saveNotes', { notesPath, text }),
+  openFolder: (folderPath) => ipcRenderer.invoke('leads:openFolder', { folderPath }),
 })
