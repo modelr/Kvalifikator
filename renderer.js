@@ -253,10 +253,12 @@ function makeCard(row) {
   const btnWait = document.createElement('button')
   btnWait.className = 'tab'
   btnWait.textContent = 'Ждем клиента'
+  btnWait.title = row.waiting_tooltip ? `Ждем клиента: ${row.waiting_tooltip}` : 'Ждем клиента: заметка не добавлена'
 
   const btnEst = document.createElement('button')
   btnEst.className = 'tab'
   btnEst.textContent = 'Оцениваем'
+  btnEst.title = row.estimating_tooltip ? `Оцениваем: ${row.estimating_tooltip}` : 'Оцениваем: заметка не добавлена'
 
   function paintTabs() {
     btnWait.classList.toggle('active', row.status === 'waiting')
@@ -277,6 +279,35 @@ function makeCard(row) {
     row.status = 'estimating'
     paintTabs()
   }
+
+  async function editStageTooltip(stage) {
+    const promptTitle = stage === 'waiting' ? 'Подсказка для кнопки «Ждем клиента»' : 'Подсказка для кнопки «Оцениваем»'
+    const nextTooltip = await askText(promptTitle, 'Введите текст подсказки (пусто — очистить)')
+    if (nextTooltip === null) return
+
+    const payload = String(nextTooltip || '').trim()
+    const saveResult = await window.api.boardSetTooltip(row.id, stage, payload)
+    if (!saveResult.ok) return alert(saveResult.error)
+
+    if (stage === 'waiting') {
+      row.waiting_tooltip = payload || null
+      btnWait.title = payload ? `Ждем клиента: ${payload}` : 'Ждем клиента: заметка не добавлена'
+      return
+    }
+
+    row.estimating_tooltip = payload || null
+    btnEst.title = payload ? `Оцениваем: ${payload}` : 'Оцениваем: заметка не добавлена'
+  }
+
+  btnWait.addEventListener('contextmenu', async (event) => {
+    event.preventDefault()
+    await editStageTooltip('waiting')
+  })
+
+  btnEst.addEventListener('contextmenu', async (event) => {
+    event.preventDefault()
+    await editStageTooltip('estimating')
+  })
 
   top.appendChild(btnWait)
   top.appendChild(btnEst)

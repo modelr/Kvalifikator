@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('api', {
 
   boardList: () => ipcRenderer.invoke('board:list'),
   boardSetStage: (id, status) => ipcRenderer.invoke('board:setStage', { id, status }),
+  boardSetTooltip: (id, stage, tooltip) => ipcRenderer.invoke('board:setTooltip', { id, stage, tooltip }),
   boardSetContact: (id, phone, email) => ipcRenderer.invoke('board:setContact', { id, phone, email }),
   boardReject: (id, reason) => ipcRenderer.invoke('board:reject', { id, reason }),
   boardToWork: (id, crmNumber) => ipcRenderer.invoke('board:toWork', { id, crmNumber }),

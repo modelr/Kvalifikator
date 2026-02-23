@@ -222,7 +222,14 @@ ipcMain.handle('leads:create', async (_evt, { title, text, files }) => {
 
   const { data: row0, error: e0 } = await supabaseAuthed
     .from('leads')
-    .insert({ user_id, title: (title || 'new'), raw: text, status: 'estimating' })
+    .insert({
+      user_id,
+      title: (title || 'new'),
+      raw: text,
+      status: 'estimating',
+      waiting_tooltip: null,
+      estimating_tooltip: null,
+    })
     .select()
     .single()
 
@@ -288,7 +295,7 @@ ipcMain.handle('board:list', async () => {
 
   const { data, error } = await supabaseAuthed
     .from('leads')
-    .select('id,q,title,phone,email,status,folder_path,notes_path,created_at')
+    .select('id,q,title,phone,email,status,folder_path,notes_path,waiting_tooltip,estimating_tooltip,created_at')
     .eq('user_id', user_id)
     .in('status', ['new', 'estimating', 'waiting'])
     .order('id', { ascending: false })
@@ -314,6 +321,41 @@ ipcMain.handle('board:setStage', async (_evt, { id, status }) => {
   const { error } = await supabaseAuthed
     .from('leads')
     .update({ status })
+    .eq('id', id)
+    .eq('user_id', user_id)
+
+  if (error) return { ok: false, error: error.message }
+  return { ok: true }
+})
+
+
+ipcMain.handle('board:setTooltip', async (_evt, { id, stage, tooltip }) => {
+  const { data: sess } = await supabase.auth.getSession()
+  const token = sess?.session?.access_token
+  if (!token) return { ok: false, error: 'Not logged in' }
+
+  const jwt = decodeJwtPayload(token)
+  const user_id = jwt?.sub
+  if (!user_id) return { ok: false, error: 'No user_id in token' }
+
+  const stageToColumn = {
+    waiting: 'waiting_tooltip',
+    estimating: 'estimating_tooltip',
+  }
+
+  const column = stageToColumn[stage]
+  if (!column) return { ok: false, error: 'Invalid stage for tooltip' }
+
+  const normalizedTooltip = typeof tooltip === 'string' ? tooltip.trim() : ''
+
+  const supabaseAuthed = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    global: { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` } },
+  })
+
+  const { error } = await supabaseAuthed
+    .from('leads')
+    .update({ [column]: normalizedTooltip || null })
     .eq('id', id)
     .eq('user_id', user_id)
 
