@@ -21,7 +21,7 @@ document.getElementById('btnPickBaseDir')?.addEventListener('click', async () =>
 })
 
 
-function askText(title, placeholder) {
+function askText(title, placeholder, initialValue = '') {
   return new Promise((resolve) => {
     const overlay = document.createElement('div')
     overlay.style.position = 'fixed'
@@ -52,6 +52,7 @@ function askText(title, placeholder) {
     const input = document.createElement('input')
     input.type = 'text'
     input.placeholder = placeholder || ''
+	input.value = initialValue || ''
     input.style.width = '100%'
     input.style.fontSize = '16px'
     input.style.padding = '8px'
@@ -263,19 +264,41 @@ function makeCard(row) {
     btnEst.classList.toggle('tabEstimatingActive', row.status !== 'waiting')
   }
   paintTabs()
+  
+  function refreshInfoTooltip() {
+    const note = row.status === 'waiting' ? row.waiting_note : row.estimating_note
+    btnInfo.title = note ? note : 'Нет заметки для текущего этапа'
+  }
 
   btnWait.onclick = async () => {
-    const r = await window.api.boardSetStage(row.id, 'waiting')
+    const text = await askText('Что ждем от клиента?', '', 'Ждем решения, ждем доп. информацию...')
+    if (text === null) return
+
+    const r = await window.api.boardSetStage(row.id, 'waiting', text)
     if (!r.ok) return alert(r.error)
+		
     row.status = 'waiting'
+    row.waiting_note = (text || '').trim() || row.waiting_note || ''
     paintTabs()
+	refreshInfoTooltip()
   }
 
   btnEst.onclick = async () => {
-    const r = await window.api.boardSetStage(row.id, 'estimating')
+    const shouldAsk = row.status === 'estimating'
+    let text = ''
+
+    if (shouldAsk) {
+      text = await askText('Что надо сделать?', '', 'Дать цену, согласовать чертеж...')
+      if (text === null) return
+    }
+
+    const r = await window.api.boardSetStage(row.id, 'estimating', text)
     if (!r.ok) return alert(r.error)
+		
     row.status = 'estimating'
+    if (shouldAsk) row.estimating_note = (text || '').trim() || row.estimating_note || ''
     paintTabs()
+	refreshInfoTooltip()
   }
 
   top.appendChild(btnWait)
@@ -294,6 +317,8 @@ btnInfo.type = 'button'
 btnInfo.className = 'btnInfo'
 btnInfo.textContent = 'i'
 btnInfo.dataset.notes = row.notes_path || ''
+btnInfo.title = ''
+refreshInfoTooltip()
 
 const btnFolder = document.createElement('button')
 btnFolder.type = 'button'

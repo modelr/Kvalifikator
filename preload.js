@@ -13,7 +13,7 @@ contextBridge.exposeInMainWorld('api', {
   setStatus: (id, status) => ipcRenderer.invoke('leads:setStatus', { id, status }),
 
   boardList: () => ipcRenderer.invoke('board:list'),
-  boardSetStage: (id, status) => ipcRenderer.invoke('board:setStage', { id, status }),
+  boardSetStage: (id, status, noteText) => ipcRenderer.invoke('board:setStage', { id, status, noteText }),
   boardSetContact: (id, phone, email) => ipcRenderer.invoke('board:setContact', { id, phone, email }),
   boardReject: (id, reason) => ipcRenderer.invoke('board:reject', { id, reason }),
   boardToWork: (id, crmNumber) => ipcRenderer.invoke('board:toWork', { id, crmNumber }),
