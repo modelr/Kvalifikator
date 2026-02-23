@@ -324,6 +324,7 @@ btnInfo.type = 'button'
 btnInfo.className = 'btnInfo'
 btnInfo.textContent = 'i'
 btnInfo.dataset.notes = row.notes_path || ''
+btnInfo.dataset.leadId = String(row.id || '')
 btnInfo.title = ''
 refreshStageTooltips()
 
@@ -422,14 +423,17 @@ card.appendChild(titleRow)
   const btnNotesCancel = document.getElementById('btnNotesCancel')
 
   let currentNotesPath = null
+  let currentLeadId = null
 
-  function openNotesModal(path, text){
+  function openNotesModal(path, text, leadId){
     currentNotesPath = path
+    currentLeadId = leadId || null
     notesText.value = text ?? ''
     notesModal.classList.remove('hidden')
   }
   function closeNotesModal(){
     currentNotesPath = null
+    currentLeadId = null
     notesModal.classList.add('hidden')
   }
 
@@ -437,7 +441,7 @@ card.appendChild(titleRow)
 
   btnNotesSave.addEventListener('click', async () => {
     if (!currentNotesPath) return closeNotesModal()
-    const res = await window.api.saveNotes(currentNotesPath, notesText.value)
+    const res = await window.api.saveNotes(currentLeadId, currentNotesPath, notesText.value)
     if (!res.ok) {
       alert('Save error: ' + res.error)
       return
@@ -450,10 +454,11 @@ document.addEventListener('click', async (e) => {
   const btn = e.target.closest('.btnInfo')
   if (!btn || btn.dataset.folder) return
   const notesPath = btn.dataset.notes
+  const leadId = Number(btn.dataset.leadId || 0)
   if (!notesPath) { alert('notes_path пустой'); return }
   const res = await window.api.readNotes(notesPath)
   if (!res.ok) { alert('Read error: ' + res.error); return }
-  openNotesModal(res.notesPath || notesPath, res.text)
+  openNotesModal(res.notesPath || notesPath, res.text, leadId)
 })
 
 document.addEventListener('click', async (e) => {

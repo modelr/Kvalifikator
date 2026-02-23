@@ -18,6 +18,6 @@ contextBridge.exposeInMainWorld('api', {
   boardReject: (id, reason) => ipcRenderer.invoke('board:reject', { id, reason }),
   boardToWork: (id, crmNumber) => ipcRenderer.invoke('board:toWork', { id, crmNumber }),
   readNotes: (notesPath) => ipcRenderer.invoke('leads:readNotes', { notesPath }),
-  saveNotes: (notesPath, text) => ipcRenderer.invoke('leads:saveNotes', { notesPath, text }),
+  saveNotes: (id, notesPath, text) => ipcRenderer.invoke('leads:saveNotes', { id, notesPath, text }),
   openFolder: (folderPath) => ipcRenderer.invoke('leads:openFolder', { folderPath }),
 })
