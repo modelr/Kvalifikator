@@ -61,8 +61,13 @@ function resolveLeadNotesPath({ notesPath, folderPath }) {
   }
 
   const fileName = notesPath ? path.basename(path.normalize(notesPath)) : 'notes.txt'
-  if (!folderPath) return notesPath || null
-  return path.join(folderPath, fileName)
+  const resolvedFolderPath = resolveLeadFolderPath({ folderPath, notesPath })
+
+  if (!resolvedFolderPath) {
+    return notesPath || null
+  }
+
+  return path.join(resolvedFolderPath, fileName)
 }
 
 function resolveLeadPaths(row) {

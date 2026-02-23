@@ -421,7 +421,7 @@ document.addEventListener('click', async (e) => {
   if (!notesPath) { alert('notes_path пустой'); return }
   const res = await window.api.readNotes(notesPath)
   if (!res.ok) { alert('Read error: ' + res.error); return }
-  openNotesModal(notesPath, res.text)
+  openNotesModal(res.notesPath || notesPath, res.text)
 })
 
 document.addEventListener('click', async (e) => {
