@@ -574,12 +574,52 @@ ipcMain.handle('leads:readNotes', async (_evt, { notesPath }) => {
   }
 })
 
-ipcMain.handle('leads:saveNotes', async (_evt, { notesPath, text }) => {
+ipcMain.handle('leads:saveNotes', async (_evt, { id, notesPath, text }) => {
   try {
     if (!notesPath) return { ok: false, error: 'notesPath is empty' }
+
     const resolvedNotesPath = resolveLeadNotesPath({ notesPath, folderPath: null })
     await fs.promises.writeFile(resolvedNotesPath, String(text ?? ''), 'utf8')
-    return { ok: true, notesPath: resolvedNotesPath }
+
+    const leadId = Number(id)
+    if (!Number.isInteger(leadId) || leadId <= 0) {
+      return { ok: true, notesPath: resolvedNotesPath }
+    }
+
+    const { data: sess } = await supabase.auth.getSession()
+    const token = sess?.session?.access_token
+    if (!token) return { ok: false, error: 'Not logged in' }
+
+    const jwt = decodeJwtPayload(token)
+    const user_id = jwt?.sub
+    if (!user_id) return { ok: false, error: 'No user_id in token' }
+
+    const supabaseAuthed = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+      global: { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` } },
+    })
+
+    const stageNotes = extractStageNotes(resolvedNotesPath)
+    const updatePayload = {
+      waiting_tooltip: normalizeTooltip(stageNotes.waitingNote),
+      estimating_tooltip: normalizeTooltip(stageNotes.estimatingNote),
+      notes_path: resolvedNotesPath,
+    }
+
+    const { error } = await supabaseAuthed
+      .from('leads')
+      .update(updatePayload)
+      .eq('id', leadId)
+      .eq('user_id', user_id)
+
+    if (error) return { ok: false, error: error.message }
+
+    return {
+      ok: true,
+      notesPath: resolvedNotesPath,
+      waiting_tooltip: updatePayload.waiting_tooltip,
+      estimating_tooltip: updatePayload.estimating_tooltip,
+    }
   } catch (e) {
     return { ok: false, error: e?.message || String(e) }
   }
