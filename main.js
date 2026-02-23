@@ -110,6 +110,12 @@ function extractStageNotes(notesPath) {
   return result
 }
 
+function normalizeTooltip(noteText) {
+  const value = String(noteText || '').trim()
+  return value || null
+}
+
+
 function appendStageNote(notesPath, status, noteText) {
   const value = String(noteText || '').trim()
   if (!notesPath || !value) return
@@ -334,7 +340,7 @@ ipcMain.handle('board:list', async () => {
 
   const { data, error } = await supabaseAuthed
     .from('leads')
-    .select('id,q,title,phone,email,status,folder_path,notes_path,created_at')
+    .select('id,q,title,phone,email,status,folder_path,notes_path,created_at,waiting_tooltip,estimating_tooltip')
     .eq('user_id', user_id)
     .in('status', ['new', 'estimating', 'waiting'])
     .order('id', { ascending: false })
@@ -346,8 +352,8 @@ ipcMain.handle('board:list', async () => {
     const stageNotes = extractStageNotes(resolved.notes_path)
     return {
       ...resolved,
-      waiting_note: stageNotes.waitingNote,
-      estimating_note: stageNotes.estimatingNote,
+      waiting_note: resolved.waiting_tooltip || stageNotes.waitingNote,
+      estimating_note: resolved.estimating_tooltip || stageNotes.estimatingNote,
     }
   })
 
@@ -378,16 +384,22 @@ ipcMain.handle('board:setStage', async (_evt, { id, status, noteText }) => {
   if (eGet) return { ok: false, error: eGet.message }
 
   const resolvedPaths = resolveLeadPaths(row)
+  const waitingTooltip = status === 'waiting' ? normalizeTooltip(noteText) : undefined
+  const estimatingTooltip = status === 'estimating' ? normalizeTooltip(noteText) : undefined
 
   try {
     appendStageNote(resolvedPaths.notes_path, status, noteText)
   } catch (e) {
     return { ok: false, error: e.message }
   }
+  const updatePayload = { status }
+  if (status === 'waiting') updatePayload.waiting_tooltip = waitingTooltip
+  if (status === 'estimating') updatePayload.estimating_tooltip = estimatingTooltip
+
 
   const { error } = await supabaseAuthed
     .from('leads')
-    .update({ status })
+    .update(updatePayload)
     .eq('id', id)
     .eq('user_id', user_id)
 
