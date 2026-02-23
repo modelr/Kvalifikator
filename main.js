@@ -88,6 +88,7 @@ function resolveLeadPaths(row) {
   }
 }
 
+
 function extractStageNotes(notesPath) {
   const result = { waitingNote: '', estimatingNote: '' }
   if (!notesPath) return result
@@ -128,7 +129,6 @@ function appendStageNote(notesPath, status, noteText) {
   const separator = normalizedPrevious.endsWith('\n') ? '\n' : '\n\n'
   fs.writeFileSync(notesPath, `${normalizedPrevious}${separator}${line}`, 'utf-8')
 }
-
 
 // ---------- storage: сохраняем сессию в файл ----------
 function storageFilePath() {
@@ -384,7 +384,6 @@ ipcMain.handle('board:setStage', async (_evt, { id, status, noteText }) => {
   } catch (e) {
     return { ok: false, error: e.message }
   }
-
 
   const { error } = await supabaseAuthed
     .from('leads')

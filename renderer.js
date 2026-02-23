@@ -52,7 +52,7 @@ function askText(title, placeholder, initialValue = '') {
     const input = document.createElement('input')
     input.type = 'text'
     input.placeholder = placeholder || ''
-	input.value = initialValue || ''
+    input.value = initialValue || ''
     input.style.width = '100%'
     input.style.fontSize = '16px'
     input.style.padding = '8px'
@@ -264,23 +264,30 @@ function makeCard(row) {
     btnEst.classList.toggle('tabEstimatingActive', row.status !== 'waiting')
   }
   paintTabs()
-  
-  function refreshInfoTooltip() {
-    const note = row.status === 'waiting' ? row.waiting_note : row.estimating_note
-    btnInfo.title = note ? note : 'Нет заметки для текущего этапа'
+
+  function refreshStageTooltips() {
+    btnWait.title = row.waiting_note ? `Ждем клиента: ${row.waiting_note}` : 'Ждем клиента: заметка не добавлена'
+    btnEst.title = row.estimating_note ? `Оцениваем: ${row.estimating_note}` : 'Оцениваем: заметка не добавлена'
+    const activeNote = row.status === 'waiting' ? row.waiting_note : row.estimating_note
+    btnInfo.title = activeNote ? activeNote : 'Нет заметки для текущего этапа'
   }
 
   btnWait.onclick = async () => {
-    const text = await askText('Что ждем от клиента?', '', 'Ждем решения, ждем доп. информацию...')
-    if (text === null) return
+    const shouldAsk = row.status === 'waiting'
+    let text = ''
+
+    if (shouldAsk) {
+      text = await askText('Что ждем от клиента?', '', row.waiting_note || '')
+      if (text === null) return
+    }
 
     const r = await window.api.boardSetStage(row.id, 'waiting', text)
     if (!r.ok) return alert(r.error)
-		
+
     row.status = 'waiting'
-    row.waiting_note = (text || '').trim() || row.waiting_note || ''
+    if (shouldAsk) row.waiting_note = (text || '').trim() || row.waiting_note || ''
     paintTabs()
-	refreshInfoTooltip()
+    refreshStageTooltips()
   }
 
   btnEst.onclick = async () => {
@@ -288,17 +295,17 @@ function makeCard(row) {
     let text = ''
 
     if (shouldAsk) {
-      text = await askText('Что надо сделать?', '', 'Дать цену, согласовать чертеж...')
+      text = await askText('Что надо сделать?', '', row.estimating_note || '')
       if (text === null) return
     }
 
     const r = await window.api.boardSetStage(row.id, 'estimating', text)
     if (!r.ok) return alert(r.error)
-		
+
     row.status = 'estimating'
     if (shouldAsk) row.estimating_note = (text || '').trim() || row.estimating_note || ''
     paintTabs()
-	refreshInfoTooltip()
+    refreshStageTooltips()
   }
 
   top.appendChild(btnWait)
@@ -318,7 +325,7 @@ btnInfo.className = 'btnInfo'
 btnInfo.textContent = 'i'
 btnInfo.dataset.notes = row.notes_path || ''
 btnInfo.title = ''
-refreshInfoTooltip()
+refreshStageTooltips()
 
 const btnFolder = document.createElement('button')
 btnFolder.type = 'button'
