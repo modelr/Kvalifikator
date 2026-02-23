@@ -255,7 +255,7 @@ function makeCard(row) {
   btnWait.textContent = 'Ждем клиента'
 
   const btnEst = document.createElement('button')
-  btnEst.className = 'tab'
+  btnEst.className = 'tab tabEstimating'
   btnEst.textContent = 'Оцениваем'
 
   function paintTabs() {
