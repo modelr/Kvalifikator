@@ -21,7 +21,7 @@ document.getElementById('btnPickBaseDir')?.addEventListener('click', async () =>
 })
 
 
-function askText(title, placeholder, initialValue = '') {
+function askText(title, placeholder) {
   return new Promise((resolve) => {
     const overlay = document.createElement('div')
     overlay.style.position = 'fixed'
@@ -52,7 +52,6 @@ function askText(title, placeholder, initialValue = '') {
     const input = document.createElement('input')
     input.type = 'text'
     input.placeholder = placeholder || ''
-    input.value = initialValue || ''
     input.style.width = '100%'
     input.style.fontSize = '16px'
     input.style.padding = '8px'
@@ -252,60 +251,31 @@ function makeCard(row) {
   top.className = 'topRow'
 
   const btnWait = document.createElement('button')
-  btnWait.className = 'tab tabWaiting'
+  btnWait.className = 'tab'
   btnWait.textContent = 'Ждем клиента'
 
   const btnEst = document.createElement('button')
-  btnEst.className = 'tab tabEstimating'
+  btnEst.className = 'tab'
   btnEst.textContent = 'Оцениваем'
 
   function paintTabs() {
-    btnWait.classList.toggle('tabWaitingActive', row.status === 'waiting')
-    btnEst.classList.toggle('tabEstimatingActive', row.status !== 'waiting')
+    btnWait.classList.toggle('active', row.status === 'waiting')
+    btnEst.classList.toggle('active', row.status !== 'waiting')
   }
   paintTabs()
 
-  function refreshStageTooltips() {
-    btnWait.title = row.waiting_note ? `Ждем клиента: ${row.waiting_note}` : 'Ждем клиента: заметка не добавлена'
-    btnEst.title = row.estimating_note ? `Оцениваем: ${row.estimating_note}` : 'Оцениваем: заметка не добавлена'
-    const activeNote = row.status === 'waiting' ? row.waiting_note : row.estimating_note
-    btnInfo.title = activeNote ? activeNote : 'Нет заметки для текущего этапа'
-  }
-
   btnWait.onclick = async () => {
-    const shouldAsk = row.status === 'waiting'
-    let text = ''
-
-    if (shouldAsk) {
-      text = await askText('Что ждем от клиента?', '', row.waiting_note || '')
-      if (text === null) return
-    }
-
-    const r = await window.api.boardSetStage(row.id, 'waiting', text)
+    const r = await window.api.boardSetStage(row.id, 'waiting')
     if (!r.ok) return alert(r.error)
-
     row.status = 'waiting'
-    if (shouldAsk) row.waiting_note = (text || '').trim() || row.waiting_note || ''
     paintTabs()
-    refreshStageTooltips()
   }
 
   btnEst.onclick = async () => {
-    const shouldAsk = row.status === 'estimating'
-    let text = ''
-
-    if (shouldAsk) {
-      text = await askText('Что надо сделать?', '', row.estimating_note || '')
-      if (text === null) return
-    }
-
-    const r = await window.api.boardSetStage(row.id, 'estimating', text)
+    const r = await window.api.boardSetStage(row.id, 'estimating')
     if (!r.ok) return alert(r.error)
-
     row.status = 'estimating'
-    if (shouldAsk) row.estimating_note = (text || '').trim() || row.estimating_note || ''
     paintTabs()
-    refreshStageTooltips()
   }
 
   top.appendChild(btnWait)
@@ -324,8 +294,6 @@ btnInfo.type = 'button'
 btnInfo.className = 'btnInfo'
 btnInfo.textContent = 'i'
 btnInfo.dataset.notes = row.notes_path || ''
-btnInfo.title = ''
-refreshStageTooltips()
 
 const btnFolder = document.createElement('button')
 btnFolder.type = 'button'
@@ -453,7 +421,7 @@ document.addEventListener('click', async (e) => {
   if (!notesPath) { alert('notes_path пустой'); return }
   const res = await window.api.readNotes(notesPath)
   if (!res.ok) { alert('Read error: ' + res.error); return }
-  openNotesModal(res.notesPath || notesPath, res.text)
+  openNotesModal(notesPath, res.text)
 })
 
 document.addEventListener('click', async (e) => {
