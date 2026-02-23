@@ -251,7 +251,7 @@ function makeCard(row) {
   top.className = 'topRow'
 
   const btnWait = document.createElement('button')
-  btnWait.className = 'tab'
+  btnWait.className = 'tab tabWaiting'
   btnWait.textContent = 'Ждем клиента'
 
   const btnEst = document.createElement('button')
@@ -259,8 +259,8 @@ function makeCard(row) {
   btnEst.textContent = 'Оцениваем'
 
   function paintTabs() {
-    btnWait.classList.toggle('active', row.status === 'waiting')
-    btnEst.classList.toggle('active', row.status !== 'waiting')
+    btnWait.classList.toggle('tabWaitingActive', row.status === 'waiting')
+    btnEst.classList.toggle('tabEstimatingActive', row.status !== 'waiting')
   }
   paintTabs()
 
