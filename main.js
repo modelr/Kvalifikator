@@ -89,6 +89,47 @@ function resolveLeadPaths(row) {
 }
 
 
+function extractStageNotes(notesPath) {
+  const result = { waitingNote: '', estimatingNote: '' }
+  if (!notesPath) return result
+
+  try {
+    if (!fs.existsSync(notesPath)) return result
+    const text = fs.readFileSync(notesPath, 'utf-8')
+    const lines = String(text || '').split(/\r?\n/)
+
+    for (const line of lines) {
+      const waitingMatch = line.match(/^Ждем клиента:\s*(.*)$/)
+      if (waitingMatch) result.waitingNote = waitingMatch[1].trim()
+
+      const estimatingMatch = line.match(/^Оцениваем:\s*(.*)$/)
+      if (estimatingMatch) result.estimatingNote = estimatingMatch[1].trim()
+    }
+  } catch {}
+
+  return result
+}
+
+function appendStageNote(notesPath, status, noteText) {
+  const value = String(noteText || '').trim()
+  if (!notesPath || !value) return
+
+  const label = status === 'waiting' ? 'Ждем клиента' : status === 'estimating' ? 'Оцениваем' : ''
+  if (!label) return
+
+  const previous = fs.existsSync(notesPath) ? fs.readFileSync(notesPath, 'utf-8') : ''
+  const line = `${label}: ${value}`
+
+  if (!previous) {
+    fs.writeFileSync(notesPath, line, 'utf-8')
+    return
+  }
+
+  const normalizedPrevious = String(previous)
+  const separator = normalizedPrevious.endsWith('\n') ? '\n' : '\n\n'
+  fs.writeFileSync(notesPath, `${normalizedPrevious}${separator}${line}`, 'utf-8')
+}
+
 // ---------- storage: сохраняем сессию в файл ----------
 function storageFilePath() {
   return path.join(app.getPath('userData'), 'supabase-auth.json')
@@ -299,10 +340,21 @@ ipcMain.handle('board:list', async () => {
     .order('id', { ascending: false })
 
   if (error) return { ok: false, error: error.message }
-  return { ok: true, rows: (data || []).map(resolveLeadPaths) }
+
+  const rows = (data || []).map((row) => {
+    const resolved = resolveLeadPaths(row)
+    const stageNotes = extractStageNotes(resolved.notes_path)
+    return {
+      ...resolved,
+      waiting_note: stageNotes.waitingNote,
+      estimating_note: stageNotes.estimatingNote,
+    }
+  })
+
+  return { ok: true, rows }
 })
 
-ipcMain.handle('board:setStage', async (_evt, { id, status }) => {
+ipcMain.handle('board:setStage', async (_evt, { id, status, noteText }) => {
   const { data: sess } = await supabase.auth.getSession()
   const token = sess?.session?.access_token
   if (!token) return { ok: false, error: 'Not logged in' }
@@ -315,6 +367,23 @@ ipcMain.handle('board:setStage', async (_evt, { id, status }) => {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
     global: { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` } },
   })
+
+  const { data: row, error: eGet } = await supabaseAuthed
+    .from('leads')
+    .select('folder_path,notes_path')
+    .eq('id', id)
+    .eq('user_id', user_id)
+    .single()
+
+  if (eGet) return { ok: false, error: eGet.message }
+
+  const resolvedPaths = resolveLeadPaths(row)
+
+  try {
+    appendStageNote(resolvedPaths.notes_path, status, noteText)
+  } catch (e) {
+    return { ok: false, error: e.message }
+  }
 
   const { error } = await supabaseAuthed
     .from('leads')
